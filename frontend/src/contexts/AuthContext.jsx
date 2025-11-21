@@ -2,9 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
-
-// TODO: get the BACKEND_URL.
-const VITE_BACKEND_URL = "https://csc309tut11-production-a7b0.up.railway.app";
+const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 /*
  * This provider should export a `user` context state that is 
@@ -17,24 +15,21 @@ const VITE_BACKEND_URL = "https://csc309tut11-production-a7b0.up.railway.app";
  */
 export const AuthProvider = ({ children }) => {
     const navigate = useNavigate();
-    const [user, setUser] = useState(null); // TODO: Modify me.
+    const [user, setUser] = useState(null);
 
+    // Check token and fetch user on mount
     useEffect(() => {
-        const token = localStorage.getItem("token"); // retrieve token from localStorage
-        if (!token) { // if no token was retrieved, user isn't logged in
-            setUser(null);
-            return;
-        }
+        const token = localStorage.getItem("token");  // retrieve token from localStorage
+        if (!token) return;  // if no token was retrieved, user isn't logged in
 
         // validate token
         const fetchUser = async () => {
             try {
                 // fetch user data
                 const res = await fetch(`${VITE_BACKEND_URL}/user/me`, {
-                    method: "GET",
                     headers: {
-                        "Authorization": `Bearer ${token}`
-                    }
+                        "Authorization": `Bearer ${token}`,
+                    },
                 });
 
                 // token no longer valid, remove it and log out
@@ -47,10 +42,9 @@ export const AuthProvider = ({ children }) => {
                 // update user context state
                 const data = await res.json();
                 setUser(data.user);
-            }
-            catch (error) {
+            } catch {
+                localStorage.removeItem("token");
                 setUser(null);
-                return error.message;
             }
         };
 
@@ -79,38 +73,34 @@ export const AuthProvider = ({ children }) => {
      * @returns {string} - Upon failure, Returns an error message.
      */
     const login = async (username, password) => {
-        // TODO: complete me
-        if (typeof username !== "string" || typeof password !== "string") {
-            return "Invalid request body.";
-        }
         try {
             // try to login with user credentials
             const res = await fetch(`${VITE_BACKEND_URL}/login`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ username, password })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password }),
             });
 
             // login failed 
             if (!res.ok) {
-                return "Login failed.";
+                const err = await res.json();
+                return err.message || "Login failed.";
             }
-
-            // successfully logged in
-            const data = await res.json();
-            const token = data.token;
+            const { token } = await res.json();
             localStorage.setItem("token", token);
-            setUser({ username }); // update user context
+
+            // success, fetch user info after login
+            const userRes = await fetch(`${VITE_BACKEND_URL}/user/me`, {
+                headers: { "Authorization": `Bearer ${token}` },
+            });
+            const userData = await userRes.json();
+            setUser(userData.user); // update user context
 
             navigate("/profile");
-        }
-        catch (error) {
+        } catch (error) {
             setUser(null);
             return error.message;
         }
-
         return "";
     };
 
@@ -121,45 +111,25 @@ export const AuthProvider = ({ children }) => {
      * @param {Object} userData - The data of the user to register.
      * @returns {string} - Upon failure, returns an error message.
      */
-    const register = async (userData) => {
-        // TODO: complete me
-        const { username, firstname, lastname, password } = userData;
-        if (typeof username !== "string" || typeof password !== "string"
-            || typeof firstname !== "string" || typeof lastname !== "string") {
-            return "Invalid request body.";
-        }
-
+    const register = async ({ username, firstname, lastname, password }) => {
         try {
             // try to login with user credentials
             const res = await fetch(`${VITE_BACKEND_URL}/register`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(userData)
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, firstname, lastname, password }),
             });
 
             // registration failed
             if (!res.ok) {
-                let errorMessage = "Registration failed.";
-
-                try {
-                    const errorData = await res.json();
-                    errorMessage = errorData.message || errorMessage;
-                } catch {
-                    // ignore parse errors (empty body)
-                }
-
-                return errorMessage;
+                const err = await res.json();
+                return err.message || "Registration failed.";
             }
 
             navigate("/success");
-        }
-        catch (error) {
-            setUser(null);
+        } catch (error) {
             return error.message;
         }
-
         return "";
     };
 
@@ -170,6 +140,4 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);

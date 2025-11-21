@@ -4,7 +4,7 @@ import cors from "cors";
 
 const app = express();
 
-const FRONTEND_URL = "https://rare-acceptance-production.up.railway.app";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 app.use(cors({
   origin: FRONTEND_URL,
@@ -14,11 +14,6 @@ app.use(cors({
 
 app.use(express.json());
 
-app.post("/login", (req, res) => {
-  res.json({ message: "Login route works" });
-});
+app.use("/", routes);
 
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+export default app;
