@@ -6,12 +6,6 @@ const app = express();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://rare-acceptance-production.up.railway.app";
 
-app.use(cors({
-  origin: FRONTEND_URL,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
-
 app.use(
   cors({
     origin: FRONTEND_URL,
