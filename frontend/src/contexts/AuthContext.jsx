@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 const AuthContext = createContext(null);
 
 // TODO: get the BACKEND_URL.
-const VITE_BACKEND_URL = "http://localhost:3000";
+const VITE_BACKEND_URL = "https://csc309tut11-production-a7b0.up.railway.app";
 
 /*
  * This provider should export a `user` context state that is 
