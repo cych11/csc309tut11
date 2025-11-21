@@ -2,44 +2,31 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext(null);
+
+// Production backend URL (no trailing slash!)
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
-/*
- * This provider should export a `user` context state that is 
- * set (to non-null) when:
- *     1. a hard reload happens while a user is logged in.
- *     2. the user just logged in.
- * `user` should be set to null when:
- *     1. a hard reload happens when no users are logged in.
- *     2. the user just logged out.
- */
 export const AuthProvider = ({ children }) => {
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
 
-    // Check token and fetch user on mount
+    // Check token on mount
     useEffect(() => {
-        const token = localStorage.getItem("token");  // retrieve token from localStorage
-        if (!token) return;  // if no token was retrieved, user isn't logged in
+        const token = localStorage.getItem("token");
+        if (!token) return;
 
-        // validate token
         const fetchUser = async () => {
             try {
-                // fetch user data
                 const res = await fetch(`${VITE_BACKEND_URL}/user/me`, {
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                    },
+                    headers: { "Authorization": `Bearer ${token}` },
                 });
 
-                // token no longer valid, remove it and log out
                 if (!res.ok) {
                     localStorage.removeItem("token");
                     setUser(null);
                     return;
                 }
 
-                // update user context state
                 const data = await res.json();
                 setUser(data.user);
             } catch {
@@ -51,76 +38,46 @@ export const AuthProvider = ({ children }) => {
         fetchUser();
     }, []);
 
-    /*
-     * Logout the currently authenticated user.
-     *
-     * @remarks This function will always navigate to "/".
-     */
-    const logout = () => {
-        // TODO: complete me
-
-        localStorage.removeItem("token");
-        setUser(null);
-        navigate("/");
-    };
-
-    /**
-     * Login a user with their credentials.
-     *
-     * @remarks Upon success, navigates to "/profile". 
-     * @param {string} username - The username of the user.
-     * @param {string} password - The password of the user.
-     * @returns {string} - Upon failure, Returns an error message.
-     */
     const login = async (username, password) => {
         try {
-            // try to login with user credentials
             const res = await fetch(`${VITE_BACKEND_URL}/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, password }),
             });
 
-            // login failed 
             if (!res.ok) {
                 const err = await res.json();
                 return err.message || "Login failed.";
             }
+
             const { token } = await res.json();
             localStorage.setItem("token", token);
 
-            // success, fetch user info after login
+            // Fetch full user info after login
             const userRes = await fetch(`${VITE_BACKEND_URL}/user/me`, {
                 headers: { "Authorization": `Bearer ${token}` },
             });
             const userData = await userRes.json();
-            setUser(userData.user); // update user context
+            setUser(userData.user);
 
             navigate("/profile");
         } catch (error) {
             setUser(null);
             return error.message;
         }
+
         return "";
     };
 
-    /**
-     * Registers a new user. 
-     * 
-     * @remarks Upon success, navigates to "/".
-     * @param {Object} userData - The data of the user to register.
-     * @returns {string} - Upon failure, returns an error message.
-     */
     const register = async ({ username, firstname, lastname, password }) => {
         try {
-            // try to login with user credentials
             const res = await fetch(`${VITE_BACKEND_URL}/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, firstname, lastname, password }),
             });
 
-            // registration failed
             if (!res.ok) {
                 const err = await res.json();
                 return err.message || "Registration failed.";
@@ -130,7 +87,14 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             return error.message;
         }
+
         return "";
+    };
+
+    const logout = () => {
+        localStorage.removeItem("token");
+        setUser(null);
+        navigate("/");
     };
 
     return (
