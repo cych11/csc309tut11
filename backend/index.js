@@ -1,22 +1,30 @@
-// backend/index.js
 import express from "express";
-import cors from "cors";
 import routes from "./routes.js";
+import cors from "cors";
 
 const app = express();
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://rare-acceptance-production.up.railway.app";
 
 app.use(cors({
   origin: FRONTEND_URL,
-  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization"],
-  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
+
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
 app.options("*", cors());
 
 app.use(express.json());
+
 app.use("/", routes);
 
 export default app;
