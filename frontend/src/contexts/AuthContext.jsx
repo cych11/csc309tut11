@@ -1,11 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const AuthContext = createContext(null);
-const VITE_BACKEND_URL = process.env.VITE_BACKEND_URL || "https://csc309tut11-production-a7b0.up.railway.app";
+const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://csc309tut11-production-a7b0.up.railway.app";
 
 /*
  * This provider should export a `user` context state that is 
